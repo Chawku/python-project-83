@@ -1,0 +1,16 @@
+.env/
+*.egg-info
+__pycache__
+*.swp
+dist/
+*.pyc
+.venv/
+.coverage
+coverage.xml
+.pytest_cache/
+.idea/
+*.cast
+venv/
+htmlcov/
+.vscode
+.env
