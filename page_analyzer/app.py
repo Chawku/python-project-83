@@ -13,13 +13,12 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 DATABASE_URL = os.getenv('DATABASE_URL')
-connection = psycopg2.connect(DATABASE_URL)
 
 def get_db_connection():
     try:
         return psycopg2.connect(DATABASE_URL)
     except psycopg2.Error as e:
-        flash(f"Database connection error: {e}", 'danger')
+        flash(f"Ошибка соединения с базой данных: {e}", 'danger')
         return None
 
 def is_valid_url(url):
@@ -40,16 +39,19 @@ def list_urls():
     if not conn:
         return redirect(url_for('index'))
     
-    with conn.cursor() as cursor:
-        cursor.execute("""
-            SELECT urls.id, urls.name, MAX(url_checks.created_at) AS last_check
-            FROM urls
-            LEFT JOIN url_checks ON urls.id = url_checks.url_id
-            GROUP BY urls.id
-            ORDER BY urls.id DESC;
-        """)
-        urls = cursor.fetchall()
-    conn.close()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT urls.id, urls.name, MAX(url_checks.created_at) AS last_check
+                FROM urls
+                LEFT JOIN url_checks ON urls.id = url_checks.url_id
+                GROUP BY urls.id
+                ORDER BY urls.id DESC;
+            """)
+            urls = cursor.fetchall()
+    finally:
+        conn.close()
+    
     return render_template('urls.html', urls=urls)
 
 @app.route('/urls', methods=['POST'])
@@ -102,7 +104,7 @@ def show_url(id):
             cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
             url = cursor.fetchone()
 
-            cursor.execute("SELECT id, created_at FROM url_checks WHERE url_id = %s ORDER BY created_at DESC", (id,))
+            cursor.execute("SELECT id, status_code, h1, title, description, created_at FROM url_checks WHERE url_id = %s ORDER BY created_at DESC", (id,))
             checks = cursor.fetchall()
     finally:
         conn.close()
@@ -126,7 +128,7 @@ def create_check(id):
 
         url = url_data['name']
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -139,8 +141,8 @@ def create_check(id):
 
             status_code = response.status_code
 
-        except requests.RequestException:
-            flash('Произошла ошибка при проверке', 'danger')
+        except requests.RequestException as e:
+            flash(f'Произошла ошибка при проверке: {e}', 'danger')
             return redirect(url_for('show_url', id=id))
 
         with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -161,3 +163,4 @@ def create_check(id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
