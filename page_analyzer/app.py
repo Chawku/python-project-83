@@ -5,6 +5,7 @@ import psycopg2
 import requests
 from datetime import datetime
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 load_dotenv()
 
@@ -13,12 +14,15 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/urls', methods=['GET'])
 def list_urls():
@@ -34,6 +38,7 @@ def list_urls():
         urls = cursor.fetchall()
     conn.close()
     return render_template('urls.html', urls=urls)
+
 
 @app.route('/urls', methods=['POST'])
 def create_url():
@@ -65,6 +70,7 @@ def create_url():
     conn.close()
     return redirect(url_for('show_url', id=url_id))
 
+
 @app.route('/urls/<int:id>')
 def show_url(id):
     conn = get_db_connection()
@@ -76,6 +82,7 @@ def show_url(id):
         checks = cursor.fetchall()
     conn.close()
     return render_template('url.html', url=url, checks=checks)
+
 
 @app.route('/urls/<int:id>/checks', methods=['POST'])
 def create_check(id):
@@ -93,7 +100,17 @@ def create_check(id):
         try:
             response = requests.get(url)
             response.raise_for_status()
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            h1 = soup.find('h1').get_text(strip=True) if soup.find('h1') else None
+            title = soup.find('title').get_text(strip=True) if soup.find('title') else None
+            meta_description = None
+            meta_tag = soup.find('meta', attrs={'name': 'description'})
+            if meta_tag and 'content' in meta_tag.attrs:
+                meta_description = meta_tag['content']
+
             status_code = response.status_code
+
         except requests.RequestException:
             flash('Произошла ошибка при проверке', 'danger')
             return redirect(url_for('show_url', id=id))
@@ -101,10 +118,10 @@ def create_check(id):
         with connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
                 '''
-                INSERT INTO url_checks (url_id, status_code, created_at)
-                VALUES (%s, %s, %s)
+                INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ''',
-                (id, status_code, datetime.now())
+                (id, status_code, h1, title, meta_description, datetime.now())
             )
             connection.commit()
 
@@ -113,6 +130,7 @@ def create_check(id):
         connection.close()
 
     return redirect(url_for('show_url', id=id))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
