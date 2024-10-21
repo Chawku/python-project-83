@@ -129,7 +129,9 @@ def create_check(id):
         url = url_data['name']
         try:
             response = requests.get(url, timeout=10)
-            response.raise_for_status()
+            if response.status_code != 200:
+                flash(f'Не удалось выполнить проверку: сервер вернул код {response.status_code}', 'danger')
+                return redirect(url_for('show_url', id=id))
 
             soup = BeautifulSoup(response.text, 'html.parser')
             h1 = soup.find('h1').get_text(strip=True) if soup.find('h1') else None
@@ -163,4 +165,3 @@ def create_check(id):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
