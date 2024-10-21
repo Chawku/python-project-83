@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, flash, url_for
 from dotenv import load_dotenv
 import psycopg2
+import requests
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -46,7 +47,6 @@ def create_url():
 
     conn = get_db_connection()
     with conn.cursor() as cursor:
-        # Проверка, существует ли уже такой URL
         cursor.execute("SELECT id FROM urls WHERE name = %s", (normalized_url,))
         existing_url = cursor.fetchone()
 
@@ -54,7 +54,6 @@ def create_url():
             flash('URL уже существует', 'info')
             url_id = existing_url[0]
         else:
-            # Добавление нового URL
             cursor.execute(
                 "INSERT INTO urls (name, created_at) VALUES (%s, %s) RETURNING id",
                 (normalized_url, datetime.now())
@@ -70,11 +69,9 @@ def create_url():
 def show_url(id):
     conn = get_db_connection()
     with conn.cursor() as cursor:
-        # Получение информации о сайте
         cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
         url = cursor.fetchone()
 
-        # Получение проверок для данного сайта
         cursor.execute("SELECT id, created_at FROM url_checks WHERE url_id = %s ORDER BY created_at DESC", (id,))
         checks = cursor.fetchall()
     conn.close()
@@ -83,19 +80,37 @@ def show_url(id):
 @app.route('/urls/<int:id>/checks', methods=['POST'])
 def create_check(id):
     try:
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            # Вставка новой проверки в таблицу url_checks
+        connection = get_db_connection()
+        with connection.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute('SELECT name FROM urls WHERE id = %s', (id,))
+            url_data = cursor.fetchone()
+
+        if url_data is None:
+            flash('Сайт не найден', 'danger')
+            return redirect(url_for('list_urls'))
+
+        url = url_data['name']
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            status_code = response.status_code
+        except requests.RequestException:
+            flash('Произошла ошибка при проверке', 'danger')
+            return redirect(url_for('show_url', id=id))
+
+        with connection.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, created_at) VALUES (%s, %s)",
-                (id, datetime.now())
+                '''
+                INSERT INTO url_checks (url_id, status_code, created_at)
+                VALUES (%s, %s, %s)
+                ''',
+                (id, status_code, datetime.now())
             )
-        conn.commit()
-        flash('Проверка была успешно добавлена', 'success')
-    except Exception as e:
-        flash(f'Ошибка при создании проверки: {str(e)}', 'danger')
+            connection.commit()
+
+        flash('Проверка успешно выполнена', 'success')
     finally:
-        conn.close()
+        connection.close()
 
     return redirect(url_for('show_url', id=id))
 
