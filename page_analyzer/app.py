@@ -1,167 +1,154 @@
 import os
-from flask import Flask, render_template, request, redirect, flash, url_for
-from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extras import DictCursor
+from flask import Flask, render_template, request, flash, redirect, url_for, get_flashed_messages
+import validators
 import requests
-from datetime import datetime
+from dotenv import load_dotenv
 from urllib.parse import urlparse
+import psycopg2
 from bs4 import BeautifulSoup
+from psycopg2.extras import DictCursor
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-DATABASE_URL = os.getenv('DATABASE_URL')
+app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
+
 
 def get_db_connection():
-    try:
-        return psycopg2.connect(DATABASE_URL)
-    except psycopg2.Error as e:
-        flash(f"Ошибка соединения с базой данных: {e}", 'danger')
-        return None
+    return psycopg2.connect(app.config['DATABASE_URL'], cursor_factory=DictCursor)
 
-def is_valid_url(url):
-    parsed_url = urlparse(url)
-    return parsed_url.scheme in ('http', 'https') and parsed_url.netloc
-
-def normalize_url(url):
-    parsed_url = urlparse(url)
-    return f'{parsed_url.scheme}://{parsed_url.netloc}'
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    messages = get_flashed_messages(with_categories=True)
+    return render_template("index.html", messages=messages)
 
-@app.route('/urls', methods=['GET'])
+@app.post('/urls')
+def add_url():
+    url_string = request.form.get('url', '').strip()
+    if not validators.url(url_string):
+        flash("Некорректный URL", "alert alert-danger")
+        return redirect(url_for('index')), 422
+
+    parsed_url = urlparse(url_string)
+    normalized_url = f'{parsed_url.scheme}://{parsed_url.netloc}'
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT id FROM urls WHERE name = %s", (normalized_url,))
+                existing_url = curs.fetchone()
+
+                if existing_url:
+                    flash("Страница уже существует", "alert alert-danger")
+                    url_id = existing_url['id']
+                else:
+                    curs.execute(
+                        "INSERT INTO urls (name, created_at) VALUES (%s, NOW()) RETURNING id",
+                        (normalized_url,)
+                    )
+                    url_id = curs.fetchone()['id']
+                    flash("Страница успешно добавлена", "alert alert-success")
+
+        return redirect(url_for('get_url', id=url_id)), 301
+
+    except Exception as e:
+        flash(f"Ошибка при добавлении URL: {e}", "alert alert-danger")
+        return redirect(url_for('index')), 500
+
+@app.get('/urls')
 def list_urls():
-    conn = get_db_connection()
-    if not conn:
-        return redirect(url_for('index'))
-    
+    messages = get_flashed_messages(with_categories=True)
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT urls.id, urls.name, MAX(url_checks.created_at) AS last_check
-                FROM urls
-                LEFT JOIN url_checks ON urls.id = url_checks.url_id
-                GROUP BY urls.id
-                ORDER BY urls.id DESC;
-            """)
-            urls = cursor.fetchall()
-    finally:
-        conn.close()
-    
-    return render_template('urls.html', urls=urls)
+        with get_db_connection() as conn:
+            with conn.cursor() as curs:
+                curs.execute("""
+                    SELECT u.id, u.name, COALESCE(uc.status_code, '') AS status_code, uc.created_at
+                    FROM urls u
+                    LEFT JOIN (
+                        SELECT url_id, status_code, created_at
+                        FROM url_checks
+                        WHERE (url_id, created_at) IN (
+                            SELECT url_id, MAX(created_at)
+                            FROM url_checks
+                            GROUP BY url_id
+                        )
+                    ) uc ON u.id = uc.url_id
+                    ORDER BY u.created_at DESC
+                """)
+                urls = curs.fetchall()
 
-@app.route('/urls', methods=['POST'])
-def create_url():
-    url = request.form.get('url')
-    if not is_valid_url(url):
-        flash('Некорректный URL', 'danger')
-        return render_template('index.html'), 422
+        return render_template("urls.html", urls=urls, messages=messages)
 
-    normalized_url = normalize_url(url)
-    
-    if len(normalized_url) > 255:
-        flash('URL слишком длинный', 'danger')
-        return render_template('index.html'), 422
+    except Exception as e:
+        flash(f"Ошибка при получении списка URL: {e}", "alert alert-danger")
+        return redirect(url_for('index')), 500
 
-    conn = get_db_connection()
-    if not conn:
-        return redirect(url_for('index'))
-
+@app.get('/urls/<int:id>')
+def get_url(id):
+    messages = get_flashed_messages(with_categories=True)
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT id FROM urls WHERE name = %s", (normalized_url,))
-            existing_url = cursor.fetchone()
+        with get_db_connection() as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT * FROM urls WHERE id = %s", (id,))
+                url_data = curs.fetchone()
+                
+                if not url_data:
+                    flash("URL не найден", "alert alert-danger")
+                    return redirect(url_for('list_urls'))
 
-            if existing_url:
-                flash('URL уже существует', 'info')
-                url_id = existing_url[0]
-            else:
-                cursor.execute(
-                    "INSERT INTO urls (name, created_at) VALUES (%s, %s) RETURNING id",
-                    (normalized_url, datetime.now())
-                )
-                url_id = cursor.fetchone()[0]
-                flash('URL успешно добавлен', 'success')
+                curs.execute("""
+                    SELECT id, status_code, h1, title, content, created_at
+                    FROM url_checks
+                    WHERE url_id = %s
+                    ORDER BY created_at DESC
+                """, (id,))
+                url_checks = curs.fetchall()
 
-        conn.commit()
-    finally:
-        conn.close()
-    
-    return redirect(url_for('show_url', id=url_id))
+        return render_template("url.html", url=url_data, url_checks=url_checks, messages=messages)
 
-@app.route('/urls/<int:id>')
-def show_url(id):
-    conn = get_db_connection()
-    if not conn:
-        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f"Ошибка при получении данных URL: {e}", "alert alert-danger")
+        return redirect(url_for('list_urls')), 500
 
+@app.post('/urls/<int:id>/checks')
+def check_url(id):
     try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT id, name, created_at FROM urls WHERE id = %s", (id,))
-            url = cursor.fetchone()
+        with get_db_connection() as conn:
+            with conn.cursor() as curs:
+                curs.execute("SELECT name FROM urls WHERE id = %s", (id,))
+                url_data = curs.fetchone()
 
-            cursor.execute("SELECT id, status_code, h1, title, description, created_at FROM url_checks WHERE url_id = %s ORDER BY created_at DESC", (id,))
-            checks = cursor.fetchall()
-    finally:
-        conn.close()
-    
-    return render_template('url.html', url=url, checks=checks)
+                if not url_data:
+                    flash("URL не найден", "alert alert-danger")
+                    return redirect(url_for('list_urls'))
 
-@app.route('/urls/<int:id>/checks', methods=['POST'])
-def create_check(id):
-    conn = get_db_connection()
-    if not conn:
-        return redirect(url_for('index'))
+                url_name = url_data['name']
+                response = requests.get(url_name)
 
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute('SELECT name FROM urls WHERE id = %s', (id,))
-            url_data = cursor.fetchone()
+                if response.status_code != 200:
+                    flash("Произошла ошибка при проверке", "alert alert-danger")
+                    return redirect(url_for('get_url', id=id))
 
-        if url_data is None:
-            flash('Сайт не найден', 'danger')
-            return redirect(url_for('list_urls'))
+                soup = BeautifulSoup(response.text, 'html.parser')
+                h1 = (soup.find('h1').text if soup.find('h1') else '').strip()
+                title = (soup.find('title').text if soup.find('title') else '').strip()
+                description = (soup.find('meta', attrs={'name': 'description'}) or {}).get('content', '').strip()
 
-        url = url_data['name']
-        try:
-            response = requests.get(url, timeout=10)
-            if response.status_code != 200:
-                flash(f'Не удалось выполнить проверку: сервер вернул код {response.status_code}', 'danger')
-                return redirect(url_for('show_url', id=id))
+                curs.execute("""
+                    INSERT INTO url_checks (url_id, status_code, created_at, h1, title, content)
+                    VALUES (%s, %s, NOW(), %s, %s, %s)
+                """, (id, response.status_code, h1, title, description))
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            h1 = soup.find('h1').get_text(strip=True) if soup.find('h1') else None
-            title = soup.find('title').get_text(strip=True) if soup.find('title') else None
-            meta_description = None
-            meta_tag = soup.find('meta', attrs={'name': 'description'})
-            if meta_tag and 'content' in meta_tag.attrs:
-                meta_description = meta_tag['content']
+                flash("Страница успешно проверена", "alert alert-success")
 
-            status_code = response.status_code
+        return redirect(url_for('get_url', id=id))
 
-        except requests.RequestException as e:
-            flash(f'Произошла ошибка при проверке: {e}', 'danger')
-            return redirect(url_for('show_url', id=id))
+    except Exception as e:
+        flash(f"Ошибка при проверке URL: {e}", "alert alert-danger")
+        return redirect(url_for('get_url', id=id)), 500
 
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            cursor.execute(
-                '''
-                INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ''',
-                (id, status_code, h1, title, meta_description, datetime.now())
-            )
-            conn.commit()
 
-        flash('Проверка успешно выполнена', 'success')
-    finally:
-        conn.close()
-
-    return redirect(url_for('show_url', id=id))
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
