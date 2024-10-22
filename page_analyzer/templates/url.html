@@ -24,26 +24,26 @@
       {% for category, message in messages %}
       <div class="{{ category }}" role="alert">{{ message }}</div>
       {% endfor %}
-  {% endif %}
+    {% endif %}
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
-      <h1>Сайт: {{ url.name }}	</h1>
+      <h1>Сайт: {{ url.name }}</h1>
 
   <div class="table-responsive">
     <table class="table table-bordered table-hover text-nowrap" data-test="url">
       <tbody>
         <tr>
           <td>ID</td>
-          <td> {{ url.id }}</td>
+          <td>{{ url.id }}</td>
         </tr>
         <tr>
           <td>Имя</td>
-          <td>{{ url.name }}	</td>
+          <td>{{ url.name }}</td>
         </tr>
         <tr>
           <td>Дата создания</td>
-          <td>{{ url.date }}	</td>
+          <td>{{ url.date }}</td>
         </tr>
       </tbody>
     </table>
@@ -68,13 +68,13 @@
 
  {% for url_check in url_checks %}
   <tr>
-        <td> {{ url_check.id }}</td>
+        <td>{{ url_check.id }}</td>
         <td>{{ url_check.status}}</td>
         <td>{{ url_check.h1}}</td>
         <td>{{ url_check.title}}</td>
-        <td> {{ url_check.content}}</td>
+        <td>{{ url_check.content}}</td>
         <td>{{ url_check.date }}</td>
-          </tr>
+  </tr>
   {% endfor %}
     </tbody>
     </table>
