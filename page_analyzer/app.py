@@ -52,7 +52,7 @@ def add_url():
                     url_id = curs.fetchone()['id']
                     flash("Страница успешно добавлена", "alert alert-success")
 
-        return redirect(url_for('get_url', id=url_id)), 301
+        return redirect(url_for('get_url', id=url_id)), 302
 
     except Exception as e:
         flash(f"Ошибка при добавлении URL: {e}", "alert alert-danger")
