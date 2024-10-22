@@ -10,24 +10,26 @@
   <header class="flex-shrink-0">
     <nav class="navbar navbar-expand-md navbar-dark bg-dark px-3">
       <a class="navbar-brand" href="/">Анализатор страниц</a>
-      <div id="navbarNav">
+      <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-          <li class="nav-item"><a class="nav-link" href="/urls">Сайты</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="/urls">Сайты</a>
+          </li>
         </ul>
       </div>
     </nav>
   </header>
-  
+
   {% if messages %}
     {% for category, message in messages %}
-      <div class="{{ category }}" role="alert">{{ message }}</div>
+      <div class="alert {{ category }}" role="alert">{{ message }}</div>
     {% endfor %}
   {% endif %}
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
       <h1>Сайты</h1>
-    
+
       <div class="table-responsive">
         <table class="table table-bordered table-hover text-nowrap" data-test="urls">
           <thead>
@@ -43,12 +45,10 @@
               <tr>
                 <td>{{ url.id }}</td>
                 <td>
-                  <a href="/urls/{{ url.id }}">
-                    {{ url.name }}
-                  </a>
+                  <a href="/urls/{{ url.id }}">{{ url.name }}</a>
                 </td>
-                <td>{{ url.created_at }}</td>
-                <td>{{ url.status_code }}</td>
+                <td>{{ url.check_date }}</td>
+                <td>{{ url.status }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -56,6 +56,12 @@
       </div>
     </div>
   </main>
+
+  <footer class="border-top py-3 mt-5 flex-shrink-0">
+    <div class="container-lg text-center">
+      <a href="https://ru.hexlet.io/" target="_blank">Hexlet</a>
+    </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>

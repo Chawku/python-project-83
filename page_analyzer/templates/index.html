@@ -18,12 +18,6 @@
     </nav>
   </header>
 
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="{{ category }}" role="alert">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
       <div class="row">
@@ -31,14 +25,20 @@
           <h1 class="display-3">Анализатор страниц</h1>
           <p class="lead">Бесплатно проверяйте сайты на SEO-пригодность</p>
           <form action="/urls" method="post" class="d-flex justify-content-center">
-            <input type="text" name="url" placeholder="https://www.example.com" class="form-control form-control-lg">
-            <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase" value="Проверить">
+            <input type="text" name="url" placeholder="https://www.example.com" class="form-control form-control-lg" required>
+            <button type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase">Проверить</button>
           </form>
         </div>
       </div>
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN6jIeHz" crossorigin="anonymous"></script>
+  <footer class="border-top py-3 mt-5 flex-shrink-0">
+    <div class="container-lg text-center">
+      <a href="https://ru.hexlet.io/" target="_blank">Hexlet</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

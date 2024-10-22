@@ -10,19 +10,17 @@
   <header class="flex-shrink-1">
     <nav class="navbar navbar-dark bg-dark px-4">
       <a href="{{ url_for('index') }}" class="navbar-brand">Анализатор страниц</a>
-      <div>
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('get_url') }}">Сайты</a>
-          </li>
-        </ul>
-      </div>
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('get_urls') }}">Сайты</a>
+        </li>
+      </ul>
     </nav>
   </header>
 
   {% if messages %}
     {% for category, message in messages %}
-      <div class="{{ category }}" role="alert">{{ message }}</div>
+      <div class="alert {{ category }}" role="alert">{{ message }}</div>
     {% endfor %}
   {% endif %}
 
@@ -51,11 +49,11 @@
 
       <h2 class="mt-5 mb-3">Проверки</h2>
       <form method="post" action="/urls/{{ url.id }}/checks">
-        <input type="submit" class="btn btn-primary" value="Запустить проверку">
+        <button type="submit" class="btn btn-primary">Запустить проверку</button>
       </form>
 
-      <div>
-        <table class="table table-bordered table-hover mt-2" data-test="checks">
+      <div class="table-responsive mt-2">
+        <table class="table table-bordered table-hover" data-test="checks">
           <thead>
             <tr>
               <th scope="col">ID</th>
@@ -83,6 +81,12 @@
     </div>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN6jIeHz" crossorigin="anonymous"></script>
+  <footer class="border-top py-3 mt-5 flex-shrink-0">
+    <div class="container-lg text-center">
+      <a href="https://ru.hexlet.io/" target="_blank">Hexlet</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
