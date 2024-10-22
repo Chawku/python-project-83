@@ -19,9 +19,9 @@ def index():
     messages = get_flashed_messages(with_categories=True)
     return render_template("index.html", messages=messages)
 
+
 @app.post('/urls')
 def urls_page():
-    print(request.form.to_dict())
     url_string = request.form.to_dict().get('url', '')
     if not validators.url(url_string):
         messages = [("alert alert-danger", "Некорректный URL")]
@@ -36,7 +36,6 @@ def urls_page():
                 urls_tuples = curs.fetchall()
                 if urls_tuples:
                     url_id = urls_tuples[0][0]
-                    print('страница существует')
                     flash("Страница уже существует", "alert alert-danger")
                 else:
                     add_url_query = "INSERT into urls (name, created_at) \
@@ -47,10 +46,10 @@ def urls_page():
                     flash("Страница успешно добавлена", "alert alert-success")
                 return redirect(url_for('get_url', id=url_id)), 301
 
+
 @app.get('/urls')
 def get_urls():
     messages = get_flashed_messages(with_categories=True)
-    print(f"messages = {messages}")
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             sql_query = """
@@ -86,11 +85,10 @@ def get_urls():
                                    urls=urls_list,
                                    messages=messages)
 
+
 @app.get('/urls/<id>')
 def get_url(id):
     messages = get_flashed_messages(with_categories=True)
-    print(f'messages = {messages}')
-    print(id)
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
             get_url_data_query = "SELECT * FROM urls where id=%s ;"
@@ -118,6 +116,7 @@ def get_url(id):
                                    url_checks=url_checks_list,
                                    messages=messages)
 
+
 @app.post('/urls/<id>/checks')
 def check_url(id):
     with psycopg2.connect(DATABASE_URL) as conn:
@@ -125,11 +124,9 @@ def check_url(id):
             get_url_data_query = "SELECT * FROM urls where id=%s ;"
             cur.execute(get_url_data_query, (id,))
             urls_tuples = cur.fetchall()
-            print(urls_tuples)
             if urls_tuples:
                 name = urls_tuples[0][1]
             try:
-                print(f'name = {name}')
                 req = requests.request("GET", name)
                 status_code = req.status_code
                 if status_code != 200:
