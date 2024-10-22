@@ -11,6 +11,7 @@ from psycopg2.extras import DictCursor
 load_dotenv()
 
 app = Flask(__name__)
+DATABASE_URL = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
