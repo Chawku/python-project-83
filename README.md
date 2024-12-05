@@ -4,7 +4,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/ea732a494a13e8649cf1/maintainability)](https://codeclimate.com/github/Chawku/python-project-83/maintainability)
 
 # Page Analyzer
-[Page Analyzer](https://python-project-83-njqr.onrender.com)
+[Page Analyzer](https://python-project-83-qfim.onrender.com)
 
 Page Analyzer is web application that analyzes specified pages for SEO suitability,
 allowing users to add URLs and perform checks on them. 

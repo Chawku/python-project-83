@@ -14,4 +14,4 @@ venv/
 htmlcov/
 .vscode
 .env
-app2.py
+.old/
