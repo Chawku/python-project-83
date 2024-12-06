@@ -1,72 +1,77 @@
 import psycopg2
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-def get_url_by_name(db_url, url_name):
-    with psycopg2.connect(db_url) as conn:
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+def get_url_id(url_string):
+    with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as curs:
-            query = "SELECT id FROM urls WHERE name = %s;"
-            curs.execute(query, (url_name,))
-            result = curs.fetchone()
-            return result[0] if result else None
+            get_ids_of_url_query = "SELECT id from urls WHERE name= %s;"
+            curs.execute(get_ids_of_url_query, (url_string,))
+            urls_tuples = curs.fetchall()
+            if urls_tuples:
+                return urls_tuples[0][0]
+            else:
+                return None
 
-
-def add_url(db_url, url_name):
-    with psycopg2.connect(db_url) as conn:
+def add_url(url_string):
+    with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as curs:
-            query = "INSERT INTO urls (name, created_at) VALUES (%s, NOW()) RETURNING id;"
-            curs.execute(query, (url_name,))
+            add_url_query = "INSERT into urls (name, created_at) VALUES (%s, NOW()) returning id;"
+            curs.execute(add_url_query, (url_string,))
+            url_id = curs.fetchone()[0]
             conn.commit()
-            return curs.fetchone()[0]
+            return url_id
 
-
-def get_all_urls(db_url):
-    with psycopg2.connect(db_url) as conn:
-        with conn.cursor() as curs:
-            query = """
-            SELECT u.id, u.name, COALESCE(uc.status_code, ''), uc.created_at
-            FROM urls u
+def get_all_urls():
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            sql_query = """
+            SELECT
+                u.id AS url_id,
+                u.name AS url_name,
+                COALESCE(uc.status_code, '') AS status_code,
+                uc.created_at AS max_created_at
+            FROM
+                urls u
             LEFT JOIN (
-                SELECT url_id, status_code, created_at,
-                       ROW_NUMBER() OVER (PARTITION BY url_id ORDER BY created_at DESC) AS row_num
-                FROM url_checks
+                SELECT
+                    url_id,
+                    status_code,
+                    created_at,
+                    ROW_NUMBER() OVER (PARTITION BY
+                    url_id ORDER BY created_at DESC) AS row_num
+                FROM
+                    url_checks
             ) uc ON u.id = uc.url_id AND uc.row_num = 1
             ORDER BY u.created_at DESC;
             """
-            curs.execute(query)
-            return [
-                {'id': row[0], 'name': row[1], 'status': row[2], 'check_date': row[3].date() if row[3] else ''}
-                for row in curs.fetchall()
-            ]
+            cur.execute(sql_query)
+            urls_tuples = cur.fetchall()
+            return urls_tuples
 
+def get_url_data(id):
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            get_url_data_query = "SELECT * FROM urls where id=%s ;"
+            cur.execute(get_url_data_query, (id,))
+            urls_tuples = cur.fetchall()
+            return urls_tuples
 
-def get_url_details(db_url, url_id):
-    with psycopg2.connect(db_url) as conn:
-        with conn.cursor() as curs:
-            query = "SELECT id, name, created_at FROM urls WHERE id = %s;"
-            curs.execute(query, (url_id,))
-            url_data = curs.fetchone()
+def get_url_checks_data(id):
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            get_url_checks_data = "SELECT id, status_code, h1, title, content, created_at FROM url_checks where url_id=%s order by created_at desc;"
+            cur.execute(get_url_checks_data, (id,))
+            url_checks_tuples = cur.fetchall()
+            return url_checks_tuples
 
-            query = """
-            SELECT id, status_code, h1, title, content, created_at
-            FROM url_checks WHERE url_id = %s ORDER BY created_at DESC;
-            """
-            curs.execute(query, (url_id,))
-            url_checks = [
-                {'id': row[0], 'status': row[1], 'h1': row[2], 'title': row[3],
-                 'content': row[4], 'date': row[5].date()}
-                for row in curs.fetchall()
-            ]
-
-            return {'id': url_data[0], 'name': url_data[1], 'date': url_data[2].date()}, url_checks
-
-
-def add_url_check(db_url, url_id, page_data):
-    with psycopg2.connect(db_url) as conn:
-        with conn.cursor() as curs:
-            query = """
-            INSERT INTO url_checks (url_id, status_code, created_at, h1, title, content)
-            VALUES (%s, %s, NOW(), %s, %s, %s);
-            """
-            curs.execute(query, (url_id, page_data['status_code'], page_data['h1'],
-                                 page_data['title'], page_data['content']))
+def add_url_check(params):
+    with psycopg2.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            request_string = "INSERT into url_checks (url_id, status_code, created_at, h1, title, content) VALUES (%s, %s, NOW(),%s,%s,%s);"
+            cur.execute(request_string, (params['check_id'], params['status_code'], params['h1'], params['title'], params['content']))
             conn.commit()
