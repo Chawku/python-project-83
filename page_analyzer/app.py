@@ -9,7 +9,6 @@ from flask import (Flask, flash, get_flashed_messages, redirect,
 from .database import (add_url, add_url_check, get_all_urls,
                        get_url_checks_data, get_url_data, get_url_id)
 
-
 app = Flask(__name__)
 app.secret_key = 'secret key'
 
