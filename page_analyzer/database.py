@@ -1,10 +1,12 @@
-import psycopg2
 import os
+
+import psycopg2
 from dotenv import load_dotenv
 
-load_dotenv()
 
+load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
+
 
 def get_url_id(url_string):
     with psycopg2.connect(DATABASE_URL) as conn:
@@ -17,14 +19,21 @@ def get_url_id(url_string):
             else:
                 return None
 
+
 def add_url(url_string):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as curs:
-            add_url_query = "INSERT into urls (name, created_at) VALUES (%s, NOW()) returning id;"
+            add_url_query = (
+                "INSERT INTO urls (name, created_at) "
+                "VALUES (%s, NOW()) "
+                "RETURNING id;"
+            )
+
             curs.execute(add_url_query, (url_string,))
             url_id = curs.fetchone()[0]
             conn.commit()
             return url_id
+
 
 def get_all_urls():
     with psycopg2.connect(DATABASE_URL) as conn:
@@ -53,6 +62,7 @@ def get_all_urls():
             urls_tuples = cur.fetchall()
             return urls_tuples
 
+
 def get_url_data(id):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
@@ -61,17 +71,32 @@ def get_url_data(id):
             urls_tuples = cur.fetchall()
             return urls_tuples
 
+
 def get_url_checks_data(id):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            get_url_checks_data = "SELECT id, status_code, h1, title, content, created_at FROM url_checks where url_id=%s order by created_at desc;"
+            get_url_checks_data = (
+                "SELECT id, status_code, h1, title, content, created_at "
+                "FROM url_checks "
+                "WHERE url_id=%s "
+                "ORDER BY created_at DESC;"
+            )
             cur.execute(get_url_checks_data, (id,))
             url_checks_tuples = cur.fetchall()
             return url_checks_tuples
 
+
 def add_url_check(params):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
-            request_string = "INSERT into url_checks (url_id, status_code, created_at, h1, title, content) VALUES (%s, %s, NOW(),%s,%s,%s);"
-            cur.execute(request_string, (params['check_id'], params['status_code'], params['h1'], params['title'], params['content']))
+            request_string = (
+                "INSERT INTO url_checks ("
+                "url_id, status_code, created_at, h1, title, content"
+                ") VALUES ("
+                "%s, %s, NOW(), %s, %s, %s"
+                ");"
+            )
+            cur.execute(request_string, (params['check_id'],
+                                         params['status_code'], params['h1'],
+                                         params['title'], params['content']))
             conn.commit()

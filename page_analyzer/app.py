@@ -1,17 +1,23 @@
-from flask import Flask, render_template, request, flash, redirect, get_flashed_messages, url_for
-import validators
-import requests
-from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-from .database import get_url_id, add_url, get_all_urls, get_url_data, get_url_checks_data, add_url_check
+
+import requests
+import validators
+from bs4 import BeautifulSoup
+from flask import (Flask, flash, get_flashed_messages, redirect,
+                   render_template, request, url_for)
+
+from .database import (add_url, add_url_check, get_all_urls,
+                       get_url_checks_data, get_url_data, get_url_id)
 
 app = Flask(__name__)
 app.secret_key = 'secret key'
+
 
 @app.route('/')
 def index():
     messages = get_flashed_messages(with_categories=True)
     return render_template("index.html", messages=messages)
+
 
 @app.post('/urls')
 def urls_page():
@@ -30,6 +36,7 @@ def urls_page():
             flash("Страница успешно добавлена", "alert alert-success")
         return redirect(url_for('get_url', id=url_id)), 301
 
+
 @app.get('/urls')
 def get_urls():
     messages = get_flashed_messages(with_categories=True)
@@ -38,8 +45,10 @@ def get_urls():
     for url_tuple in urls_tuples:
         id, name, status, date = url_tuple
         date = (date.date() if date else '')
-        urls_list.append({'id': id, 'name': name, 'check_date': date, 'status': status})
+        urls_list.append({'id': id, 'name': name,
+                          'check_date': date, 'status': status})
     return render_template("urls.html", urls=urls_list, messages=messages)
+
 
 @app.get('/urls/<id>')
 def get_url(id):
@@ -52,8 +61,12 @@ def get_url(id):
     if url_checks_tuples:
         for url_check_tuple in url_checks_tuples:
             id, status, h1, title, content, date = url_check_tuple
-            url_checks_list.append({'id': id, 'status': status, 'h1': h1, 'title': title, 'content': content, 'date': date.date()})
-    return render_template("url.html", url=urls_data, url_checks=url_checks_list, messages=messages)
+            url_checks_list.append({'id': id, 'status': status, 'h1': h1,
+                                    'title': title, 'content': content,
+                                    'date': date.date()})
+    return render_template("url.html", url=urls_data,
+                           url_checks=url_checks_list, messages=messages)
+
 
 @app.post('/urls/<id>/checks')
 def check_url(id):
@@ -82,10 +95,12 @@ def check_url(id):
         content = meta_description_tag.get("content")
         content = content if content else ''
 
-    params = {'check_id': id, 'status_code': req.status_code, 'title': title, 'h1': h1, 'content': content}
+    params = {'check_id': id, 'status_code': req.status_code,
+              'title': title, 'h1': h1, 'content': content}
     add_url_check(params)
     flash("Страница успешно проверена", "alert alert-success")
     return get_url(id)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
