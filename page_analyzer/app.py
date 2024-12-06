@@ -3,14 +3,26 @@ from urllib.parse import urlparse
 import requests
 import validators
 from bs4 import BeautifulSoup
-from flask import (Flask, flash, get_flashed_messages, redirect,
-                   render_template, request, url_for)
+from flask import (
+    Flask,
+    flash,
+    get_flashed_messages,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
-from .database import (add_url, add_url_check, get_all_urls,
-                       get_url_checks_data, get_url_data, get_url_id)
+from .database import (
+    add_url,
+    add_url_check,
+    get_all_urls,
+    get_url_checks_data,
+    get_url_data,
+    get_url_id,
+)
 
 app = Flask(__name__)
-
 app.secret_key = 'secret key'
 
 
