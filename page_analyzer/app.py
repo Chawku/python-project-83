@@ -1,6 +1,8 @@
 from urllib.parse import urlparse
 
+import requests
 import validators
+from bs4 import BeautifulSoup
 from flask import (
     Flask,
     flash,
@@ -19,9 +21,6 @@ from .database import (
     get_url_data,
     get_url_id,
 )
-
-from .utils import check_url
-
 
 app = Flask(__name__)
 app.secret_key = 'secret key'
@@ -83,21 +82,38 @@ def get_url(id):
 
 
 @app.post('/urls/<id>/checks')
-def check_url_route(id):
+def check_url(id):
     urls_tuples = get_url_data(id)
     if urls_tuples:
         name = urls_tuples[0][1]
-
-    h1, title, content, status_code = check_url(name)
-    if status_code != 200:
+    try:
+        req = requests.request("GET", name)
+        status_code = req.status_code
+        if status_code != 200:
+            raise requests.RequestException
+    except requests.RequestException:
         flash("Произошла ошибка при проверке", "alert alert-danger")
         return redirect(url_for('get_url', id=id))
+    html_content = req.text
 
-    params = {'check_id': id, 'status_code': status_code,
+    soup = BeautifulSoup(html_content, 'html.parser')
+    h1 = soup.find('h1')
+    h1 = h1.text if h1 else ''
+    title = soup.find('title')
+    title = title.text if title else ''
+    attrs = {'name': 'description'}
+    meta_description_tag = soup.find('meta', attrs=attrs)
+    content = ''
+    if meta_description_tag:
+        content = meta_description_tag.get("content")
+        content = content if content else ''
+
+    params = {'check_id': id, 'status_code': req.status_code,
               'title': title, 'h1': h1, 'content': content}
     add_url_check(params)
     flash("Страница успешно проверена", "alert alert-success")
     return get_url(id)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
