@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 from flask import (
     Flask,
     flash,
@@ -7,7 +9,7 @@ from flask import (
     request,
     url_for,
 )
-from .urls import validate_url, normalize_url
+
 from .database import (
     add_url,
     add_url_check,
@@ -16,8 +18,7 @@ from .database import (
     get_url_data,
     get_url_id,
 )
-import requests
-from bs4 import BeautifulSoup
+from .urls import normalize_url, validate_url
 
 app = Flask(__name__)
 app.secret_key = 'secret key'
