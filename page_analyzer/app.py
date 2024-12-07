@@ -1,6 +1,3 @@
-from urllib.parse import urlparse
-import requests
-from bs4 import BeautifulSoup
 from flask import (
     Flask,
     flash,
@@ -10,14 +7,17 @@ from flask import (
     request,
     url_for,
 )
+from .urls import validate_url, normalize_url
 from .database import (
+    add_url,
     add_url_check,
     get_all_urls,
     get_url_checks_data,
     get_url_data,
+    get_url_id,
 )
-from .urls import process_url
-
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 app.secret_key = 'secret key'
@@ -31,10 +31,22 @@ def index():
 
 @app.post('/urls')
 def urls_page():
-    url_id, messages, status_code = process_url(request)
-    if messages:
-        return render_template("index.html", messages=messages), status_code
-    return redirect(url_for('get_url', id=url_id)), status_code
+    url_string = request.form.to_dict().get('url', '')
+    is_valid, error_message = validate_url(url_string)
+    if not is_valid:
+        messages = [("alert alert-danger", error_message)]
+        return render_template("index.html", messages=messages), 422
+
+    normalized_url = normalize_url(url_string)
+    url_id = get_url_id(normalized_url)
+
+    if url_id:
+        flash("Страница уже существует", "alert alert-danger")
+    else:
+        url_id = add_url(normalized_url)
+        flash("Страница успешно добавлена", "alert alert-success")
+
+    return redirect(url_for('get_url', id=url_id)), 301
 
 
 @app.get('/urls')
