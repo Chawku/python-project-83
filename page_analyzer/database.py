@@ -13,9 +13,9 @@ def get_url_id(url_string):
         with conn.cursor(cursor_factory=DictCursor) as curs:
             get_ids_of_url_query = "SELECT id from urls WHERE name= %s;"
             curs.execute(get_ids_of_url_query, (url_string,))
-            url_dict = curs.fetchone()
-            if url_dict:
-                return url_dict['id']
+            urls_dicts = curs.fetchone()
+            if urls_dicts:
+                return urls_dicts[0]['id']
             else:
                 return None
 
@@ -67,8 +67,8 @@ def get_url_data(id):
         with conn.cursor(cursor_factory=DictCursor) as cur:
             get_url_data_query = "SELECT * FROM urls where id=%s ;"
             cur.execute(get_url_data_query, (id,))
-            url_dict = cur.fetchone()
-            return url_dict
+            urls_dicts = cur.fetchall()
+            return urls_dicts
 
 
 def get_url_checks_data(id):
