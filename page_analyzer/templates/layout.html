@@ -19,11 +19,7 @@
     </nav>
   </header>
 
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="{{ category }}" role="alert">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
+  {% include "partials/flashes.html" %}
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
