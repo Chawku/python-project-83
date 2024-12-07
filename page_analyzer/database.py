@@ -13,7 +13,7 @@ def get_url_id(url_string):
         with conn.cursor(cursor_factory=DictCursor) as curs:
             get_ids_of_url_query = "SELECT id from urls WHERE name= %s;"
             curs.execute(get_ids_of_url_query, (url_string,))
-            urls_dicts = curs.fetchone()
+            urls_dicts = curs.fetchall()
             if urls_dicts:
                 return urls_dicts[0]['id']
             else:
