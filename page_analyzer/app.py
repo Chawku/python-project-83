@@ -1,4 +1,5 @@
 import requests
+from dotenv import load_dotenv
 from flask import (
     Flask,
     flash,
@@ -19,6 +20,8 @@ from .database import (
 )
 from .html_parser import extract_page_data
 from .urls import normalize_url, validate_url
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'secret key'
@@ -110,4 +113,5 @@ def check_url(id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_mode)
