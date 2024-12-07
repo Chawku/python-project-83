@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 from flask import (
     Flask,
     flash,
@@ -18,6 +17,7 @@ from .database import (
     get_url_data,
     get_url_id,
 )
+from .html_parser import extract_page_data
 from .urls import normalize_url, validate_url
 
 app = Flask(__name__)
@@ -97,19 +97,12 @@ def check_url(id):
         return redirect(url_for('get_url', id=id))
     
     html_content = req.text
-    soup = BeautifulSoup(html_content, 'html.parser')
-    h1 = soup.find('h1').text if soup.find('h1') else ''
-    title = soup.find('title').text if soup.find('title') else ''
-    meta_description_tag = soup.find('meta', attrs={'name': 'description'})
-    content = (meta_description_tag.get("content")
-           if meta_description_tag else '')
+    page_data = extract_page_data(html_content)
 
     params = {
         'check_id': id,
         'status_code': req.status_code,
-        'title': title,
-        'h1': h1,
-        'content': content
+        **page_data
     }
     add_url_check(params)
     flash("Страница успешно проверена", "alert alert-success")
