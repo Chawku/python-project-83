@@ -11,13 +11,10 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 def get_url_id(url_string):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as curs:
-            get_ids_of_url_query = "SELECT id from urls WHERE name= %s;"
+            get_ids_of_url_query = "SELECT id FROM urls WHERE name = %s;"
             curs.execute(get_ids_of_url_query, (url_string,))
-            urls_dicts = curs.fetchall()
-            if urls_dicts:
-                return urls_dicts[0]['id']
-            else:
-                return None
+            url_record = curs.fetchone()
+            return url_record['id'] if url_record else None
 
 
 def add_url(url_string):
