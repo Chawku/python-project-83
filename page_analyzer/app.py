@@ -101,7 +101,8 @@ def check_url(id):
     h1 = soup.find('h1').text if soup.find('h1') else ''
     title = soup.find('title').text if soup.find('title') else ''
     meta_description_tag = soup.find('meta', attrs={'name': 'description'})
-    content = meta_description_tag.get("content") if meta_description_tag else ''
+    content = (meta_description_tag.get("content")
+           if meta_description_tag else '')
 
     params = {
         'check_id': id,
