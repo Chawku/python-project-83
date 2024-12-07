@@ -84,35 +84,35 @@ def get_url(id):
 @app.post('/urls/<id>/checks')
 def check_url(id):
     urls_tuples = get_url_data(id)
-    if urls_tuples:
-        name = urls_tuples[0][1]
+    if not urls_tuples:
+        flash("URL не найден", "alert alert-danger")
+        return redirect(url_for('get_urls'))
+    
+    name = urls_tuples[0][1]
     try:
-        req = requests.request("GET", name)
-        status_code = req.status_code
-        if status_code != 200:
-            raise requests.RequestException
+        req = requests.get(name)
+        req.raise_for_status()
     except requests.RequestException:
         flash("Произошла ошибка при проверке", "alert alert-danger")
         return redirect(url_for('get_url', id=id))
+    
     html_content = req.text
-
     soup = BeautifulSoup(html_content, 'html.parser')
-    h1 = soup.find('h1')
-    h1 = h1.text if h1 else ''
-    title = soup.find('title')
-    title = title.text if title else ''
-    attrs = {'name': 'description'}
-    meta_description_tag = soup.find('meta', attrs=attrs)
-    content = ''
-    if meta_description_tag:
-        content = meta_description_tag.get("content")
-        content = content if content else ''
+    h1 = soup.find('h1').text if soup.find('h1') else ''
+    title = soup.find('title').text if soup.find('title') else ''
+    meta_description_tag = soup.find('meta', attrs={'name': 'description'})
+    content = meta_description_tag.get("content") if meta_description_tag else ''
 
-    params = {'check_id': id, 'status_code': req.status_code,
-              'title': title, 'h1': h1, 'content': content}
+    params = {
+        'check_id': id,
+        'status_code': req.status_code,
+        'title': title,
+        'h1': h1,
+        'content': content
+    }
     add_url_check(params)
     flash("Страница успешно проверена", "alert alert-success")
-    return get_url(id)
+    return redirect(url_for('get_url', id=id))
 
 
 if __name__ == "__main__":
