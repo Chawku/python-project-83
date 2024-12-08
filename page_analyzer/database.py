@@ -8,7 +8,7 @@ load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-def get_url_id(url_string):
+def find_by_url(url_string):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as curs:
             get_ids_of_url_query = "SELECT id FROM urls WHERE name = %s;"
