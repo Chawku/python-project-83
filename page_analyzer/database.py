@@ -23,8 +23,7 @@ def add_url(url_string):
             add_url_query = """
             INSERT INTO urls (name, created_at)
             VALUES (%s, NOW()) "
-            RETURNING id;
-            """
+            RETURNING id;"""
             curs.execute(add_url_query, (url_string,))
             url_id = curs.fetchone()['id']
             conn.commit()
@@ -75,8 +74,7 @@ def get_url_checks_data(id):
             SELECT id, status_code, h1, title, content, created_at
             FROM url_checks
             WHERE url_id=%s
-            ORDER BY created_at DESC;
-            """
+            ORDER BY created_at DESC;"""
             cur.execute(get_url_checks_data, (id,))
             url_checks_dicts = cur.fetchall()
             return url_checks_dicts
@@ -90,8 +88,7 @@ def add_url_check(params):
             url_id, status_code, created_at, h1, title, content
             ) VALUES (
             %s, %s, NOW(), %s, %s, %s
-            );
-            """
+            );"""
             cur.execute(request_string, (params['check_id'],
                                          params['status_code'], params['h1'],
                                          params['title'], params['content']))
