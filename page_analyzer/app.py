@@ -18,7 +18,7 @@ from .database import (
     get_all_urls,
     get_url_checks_data,
     get_url_data,
-    get_url_id,
+    find_by_url,
 )
 from .html_parser import extract_page_data
 from .urls import normalize_url, validate_url
@@ -44,7 +44,7 @@ def urls_page():
         return render_template("index.html", messages=messages), 422
 
     normalized_url = normalize_url(url_string)
-    url_id = get_url_id(normalized_url)
+    url_id = find_by_url(normalized_url)
 
     if url_id:
         flash("Страница уже существует", "alert alert-danger")
