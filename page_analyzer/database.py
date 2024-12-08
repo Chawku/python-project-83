@@ -21,9 +21,9 @@ def add_url(url_string):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as curs:
             add_url_query = """
-                INSERT INTO urls (name, created_at)
-                VALUES (%s, NOW()) "
-                RETURNING id;
+            INSERT INTO urls (name, created_at)
+            VALUES (%s, NOW()) "
+            RETURNING id;
             """
             curs.execute(add_url_query, (url_string,))
             url_id = curs.fetchone()['id']
@@ -72,10 +72,10 @@ def get_url_checks_data(id):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             get_url_checks_data = """
-                SELECT id, status_code, h1, title, content, created_at
-                FROM url_checks
-                WHERE url_id=%s
-                ORDER BY created_at DESC;
+            SELECT id, status_code, h1, title, content, created_at
+            FROM url_checks
+            WHERE url_id=%s
+            ORDER BY created_at DESC;
             """
             cur.execute(get_url_checks_data, (id,))
             url_checks_dicts = cur.fetchall()
@@ -86,11 +86,11 @@ def add_url_check(params):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:
             request_string = """
-                INSERT INTO url_checks (
-                url_id, status_code, created_at, h1, title, content
-                ) VALUES (
-                %s, %s, NOW(), %s, %s, %s
-                );
+            INSERT INTO url_checks (
+            url_id, status_code, created_at, h1, title, content
+            ) VALUES (
+            %s, %s, NOW(), %s, %s, %s
+            );
             """
             cur.execute(request_string, (params['check_id'],
                                          params['status_code'], params['h1'],
