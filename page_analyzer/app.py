@@ -74,9 +74,12 @@ def get_urls():
 @app.get('/urls/<id>')
 def get_url(id):
     messages = get_flashed_messages(with_categories=True)
-    urls_tuples = find_url_by_id(id)
-    id, name, date = urls_tuples[0]
-    urls_data = {"id": id, "name": name, "date": date}
+    url_dict = find_url_by_id(id)
+    if not url_dict:
+        flash("URL не найден", "alert alert-danger")
+        return redirect(url_for('get_urls'))
+
+    urls_data = {"id": url_dict['id'], "name": url_dict['name'], "date": url_dict['created_at']}
     url_checks_tuples = get_url_checks_data(id)
     url_checks_list = []
     if url_checks_tuples:
@@ -96,19 +99,19 @@ def get_url(id):
 
 @app.post('/urls/<id>/checks')
 def check_url(id):
-    urls_tuples = find_url_by_id(id)
-    if not urls_tuples:
+    url_dict = find_url_by_id(id)
+    if not url_dict:
         flash("URL не найден", "alert alert-danger")
         return redirect(url_for('get_urls'))
-    
-    name = urls_tuples[0][1]
+
+    name = url_dict['name']
     try:
         req = requests.get(name)
         req.raise_for_status()
     except requests.RequestException:
         flash("Произошла ошибка при проверке", "alert alert-danger")
         return redirect(url_for('get_url', id=id))
-    
+
     html_content = req.text
     page_data = extract_page_data(html_content)
 
