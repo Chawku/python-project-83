@@ -15,10 +15,10 @@ from flask import (
 from .database import (
     add_url,
     add_url_check,
+    find_by_url,
     get_all_urls,
     get_url_checks_data,
     get_url_data,
-    find_by_url,
 )
 from .html_parser import extract_page_data
 from .urls import normalize_url, validate_url
@@ -26,7 +26,7 @@ from .urls import normalize_url, validate_url
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'secret key'
+app.secret_key = os.getenv('SECRET_KEY')
 
 
 @app.route('/')
