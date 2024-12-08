@@ -72,8 +72,8 @@ def find_url_by_id(id):
                 WHERE id = %s;
             """
             cur.execute(find_url_by_id_query, (id,))
-            urls_dicts = cur.fetchone()
-            return urls_dicts
+            url_dicts = cur.fetchone()
+            return url_dicts if url_dicts else {}
 
 
 def get_url_checks_data(id):
