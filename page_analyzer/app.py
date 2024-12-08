@@ -16,9 +16,9 @@ from .database import (
     add_url,
     add_url_check,
     find_by_url,
+    find_url_by_id,
     get_all_urls,
     get_url_checks_data,
-    get_url_data,
 )
 from .html_parser import extract_page_data
 from .urls import normalize_url, validate_url
@@ -74,7 +74,7 @@ def get_urls():
 @app.get('/urls/<id>')
 def get_url(id):
     messages = get_flashed_messages(with_categories=True)
-    urls_tuples = get_url_data(id)
+    urls_tuples = find_url_by_id(id)
     id, name, date = urls_tuples[0]
     urls_data = {"id": id, "name": name, "date": date}
     url_checks_tuples = get_url_checks_data(id)
@@ -96,7 +96,7 @@ def get_url(id):
 
 @app.post('/urls/<id>/checks')
 def check_url(id):
-    urls_tuples = get_url_data(id)
+    urls_tuples = find_url_by_id(id)
     if not urls_tuples:
         flash("URL не найден", "alert alert-danger")
         return redirect(url_for('get_urls'))
