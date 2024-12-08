@@ -63,7 +63,6 @@ def get_all_urls():
             return urls_dicts
 
 
-
 def find_url_by_id(id):
     with psycopg2.connect(DATABASE_URL) as conn:
         with conn.cursor(cursor_factory=DictCursor) as cur:

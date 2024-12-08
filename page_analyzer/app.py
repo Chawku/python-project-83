@@ -79,7 +79,8 @@ def get_url(id):
         flash("URL не найден", "alert alert-danger")
         return redirect(url_for('get_urls'))
 
-    urls_data = {"id": url_dict['id'], "name": url_dict['name'], "date": url_dict['created_at']}
+    urls_data = {"id": url_dict['id'], "name": url_dict['name'],
+                 "date": url_dict['created_at']}
     url_checks_tuples = get_url_checks_data(id)
     url_checks_list = []
     if url_checks_tuples:
