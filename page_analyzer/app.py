@@ -74,21 +74,27 @@ def get_urls():
 @app.get('/urls/<id>')
 def get_url(id):
     messages = get_flashed_messages(with_categories=True)
-    urls_tuples = find_url_by_id(id)
-    id, name, date = urls_tuples[0]
-    urls_data = {"id": id, "name": name, "date": date}
+    url_record = find_url_by_id(id)
+    if not url_record:
+        flash("URL не найден", "alert alert-danger")
+        return redirect(url_for('get_urls'))
+
+    urls_data = {
+        "id": url_record['id'],
+        "name": url_record['name'],
+        "date": url_record['created_at']
+    }
     url_checks_tuples = get_url_checks_data(id)
     url_checks_list = []
     if url_checks_tuples:
         for url_check_tuple in url_checks_tuples:
-            id, status, h1, title, content, date = url_check_tuple
             url_checks_list.append({
-                'id': id,
-                'status': status,
-                'h1': h1,
-                'title': title,
-                'content': content,
-                'date': date
+                'id': url_check_tuple['id'],
+                'status': url_check_tuple['status_code'],
+                'h1': url_check_tuple['h1'],
+                'title': url_check_tuple['title'],
+                'content': url_check_tuple['content'],
+                'date': url_check_tuple['created_at']
             })
     return render_template("url.html", url=urls_data,
                            url_checks=url_checks_list, messages=messages)
