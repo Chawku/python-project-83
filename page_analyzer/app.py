@@ -62,9 +62,12 @@ def get_urls():
     urls_list = []
     for url_tuple in urls_tuples:
         id, name, status, date = url_tuple
-        date = (date.date() if date else '')
-        urls_list.append({'id': id, 'name': name,
-                          'check_date': date, 'status': status})
+        urls_list.append({
+            'id': id,
+            'name': name,
+            'check_date': date,
+            'status': status
+        })
     return render_template("urls.html", urls=urls_list, messages=messages)
 
 
@@ -73,15 +76,20 @@ def get_url(id):
     messages = get_flashed_messages(with_categories=True)
     urls_tuples = get_url_data(id)
     id, name, date = urls_tuples[0]
-    urls_data = {"id": id, "name": name, "date": date.date()}
+    urls_data = {"id": id, "name": name, "date": date}
     url_checks_tuples = get_url_checks_data(id)
     url_checks_list = []
     if url_checks_tuples:
         for url_check_tuple in url_checks_tuples:
             id, status, h1, title, content, date = url_check_tuple
-            url_checks_list.append({'id': id, 'status': status, 'h1': h1,
-                                    'title': title, 'content': content,
-                                    'date': date.date()})
+            url_checks_list.append({
+                'id': id,
+                'status': status,
+                'h1': h1,
+                'title': title,
+                'content': content,
+                'date': date
+            })
     return render_template("url.html", url=urls_data,
                            url_checks=url_checks_list, messages=messages)
 
